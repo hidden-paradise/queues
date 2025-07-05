@@ -41,15 +41,13 @@ func main() {
 			continue
 		}
 
-		key := fmt.Sprintf("myhash:%d", time.Now().UnixNano())
-
-		err = rdb.Set(ctx, key, hash, 0).Err()
+		err = rdb.LPush(ctx, "myqueue", hash).Err()
 		if err != nil {
 			fmt.Printf("error writing to redis: %v\n", err)
 			continue
 		}
 
-		fmt.Printf("Wrote to Redis: key=%s value=%s\n", key, hash)
+		fmt.Printf("Pushed to queue: %s\n", hash)
 
 		delay := time.Duration(mathRand.Intn(1900)+100) * time.Millisecond
 		time.Sleep(delay)
