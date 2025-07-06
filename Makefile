@@ -67,7 +67,7 @@ deploy-consumer: build-consumer
 		--set redisAddr="redis.queues-learning.svc.cluster.local:6379" \
 		--set env.QUEUE_NAME=$(REDIS_QUEUE)
 
-deploy: deploy-deps build-images push-images deploy-producer deploy-consumer
+deploy: deploy-deps deploy-producer deploy-consumer
 
 delete-cluster:
 	k3d cluster delete $(CLUSTER_NAME)
