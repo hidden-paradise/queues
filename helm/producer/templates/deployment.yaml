@@ -5,7 +5,7 @@ metadata:
   labels:
     app: producer
 spec:
-  replicas: { { .Values.replicaCount } }
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: producer
@@ -19,15 +19,15 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           ports:
-            - containerPort: { { .Values.service.port } }
+            - containerPort: {{ .Values.service.port }}
               name: http-metrics
 
           env:
             - name: PRODUCER_ID
-              value: { { .Values.env.PRODUCER_ID | quote } }
+              value: {{ .Values.env.PRODUCER_ID | quote }}
             - name: REDIS_ADDR
-              value: { { .Values.env.REDIS_ADDR | quote } }
+              value: {{ .Values.env.REDIS_ADDR | quote }}
             - name: QUEUE_NAME
-              value: { { .Values.env.QUEUE_NAME | quote } }
+              value: {{ .Values.env.QUEUE_NAME | quote }}
 
 

@@ -5,10 +5,10 @@ metadata:
   labels:
     app: producer
 spec:
-  type: { { .Values.service.type } }
+  type: {{ .Values.service.type }}
   ports:
     - name: http-metrics
-      port: { { .Values.service.port } }
-      targetPort: { { .Values.service.port } }
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
   selector:
     app: producer
