@@ -35,20 +35,20 @@ deploy-deps: create-namespace
 	helm repo update
 
 	helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
-      --namespace queues-learning \
-      --create-namespace
+      --namespace queues-learning
 
 	helm upgrade --install redis bitnami/redis \
-    	--namespace $(NAMESPACE) \
-    	--set architecture=standalone \
-    	--set auth.enabled=false \
-	  	--set metrics.enabled=true \
+		--namespace $(NAMESPACE) \
+		--set architecture=standalone \
+		--set auth.enabled=false \
+		--set metrics.enabled=true \
 		--set metrics.serviceMonitor.enabled=true \
 		--set metrics.serviceMonitor.namespace=queues-learning \
 		--set metrics.serviceMonitor.interval=15s \
 		--set metrics.serviceMonitor.scrapeTimeout=5s \
 		--set metrics.serviceMonitor.additionalLabels.release=prometheus \
-		--set metrics.extraArgs.redis.collect-keys=$(REDIS_QUEUE)
+		--set metrics.extraEnvVars[0].name=REDIS_EXPORTER_CHECK_SINGLE_KEYS \
+		--set metrics.extraEnvVars[0].value=$(REDIS_QUEUE)
 
 
 deploy-producer: build-producer
