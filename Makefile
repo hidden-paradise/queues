@@ -14,8 +14,8 @@ create-cluster:
 		--api-port 127.0.0.1:6443 \
 		--port 8080:80@loadbalancer \
 		--port 8443:443@loadbalancer \
-		--registry-create myregistry.localhost:5500 \
-		--k3s-arg "--kubelet-arg=resolv-conf=/etc/resolv.conf@server:0"
+		--registry-create $(REGISTRY_K8S) \
+		--k3s-arg "--kubelet-arg=resolv-conf=/etc/resolv.conf@server:0" \
 		--wait
 
 build-consumer:
@@ -47,7 +47,8 @@ deploy-deps: create-namespace
 		--set metrics.serviceMonitor.namespace=queues-learning \
 		--set metrics.serviceMonitor.interval=15s \
 		--set metrics.serviceMonitor.scrapeTimeout=5s \
-		--set metrics.serviceMonitor.additionalLabels.release=prometheus
+		--set metrics.serviceMonitor.additionalLabels.release=prometheus \
+		--set metrics.extraArgs.redis.collect-keys=$(REDIS_QUEUE)
 
 
 deploy-producer: build-producer
