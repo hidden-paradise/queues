@@ -12,4 +12,4 @@ service:
 env:
   CONSUMER_ID: consumer-1
   REDIS_ADDR: redis-master:6379
-  QUEUE_NAME: "jobs"˚
+  QUEUE_NAME: "jobs"
