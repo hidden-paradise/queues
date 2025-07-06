@@ -17,7 +17,7 @@ spec:
       containers:
         - name: producer
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: { { .Values.image.pullPolicy } }
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           ports:
             - containerPort: { { .Values.service.port } }
               name: http-metrics
