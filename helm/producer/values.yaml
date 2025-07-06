@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  repository: registry.queues-learning.svc.cluster.local:5000/producer
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 9100
+
+env:
+  PRODUCER_ID: producer-1
+  REDIS_ADDR: redis-master:6379
+  QUEUE_NAME: "jobs"

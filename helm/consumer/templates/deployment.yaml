@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+  labels:
+    app: consumer
+spec:
+  replicas: { { .Values.replicaCount } }
+  selector:
+    matchLabels:
+      app: consumer
+  template:
+    metadata:
+      labels:
+        app: consumer
+    spec:
+      containers:
+        - name: consumer
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: { { .Values.image.pullPolicy } }
+          ports:
+            - containerPort: { { .Values.service.port } }
+              name: http-metrics
+          env:
+            - name: consumer_ID
+              value: { { .Values.env.consumer_ID | quote } }
+            - name: REDIS_ADDR
+              value: { { .Values.env.REDIS_ADDR | quote } }
+            - name: QUEUE_NAME
+              value: { { .Values.env.QUEUE_NAME | quote } }

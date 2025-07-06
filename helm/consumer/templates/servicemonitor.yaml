@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: consumer-metrics
+  namespace: { { .Release.Namespace } }
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: consumer
+  endpoints:
+    - port: http-metrics
+      interval: 1s

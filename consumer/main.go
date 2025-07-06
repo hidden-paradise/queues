@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,8 +16,7 @@ import (
 )
 
 const (
-	queueName   = "jobs"
-	metricsPort = ":2112"
+	metricsPort = ":9100"
 	errorChance = 5 // 1 of 5 means 20% chance of error
 )
 
@@ -48,12 +48,13 @@ func init() {
 }
 
 type Consumer struct {
-	ID  string
-	RDB *redis.Client
-	Ctx context.Context
+	ID        string
+	QueueName string
+	RDB       *redis.Client
+	Ctx       context.Context
 }
 
-func NewConsumer(id string, redisAddr string) *Consumer {
+func NewConsumer(id, queueName, redisAddr string) *Consumer {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 		DB:   0,
@@ -66,9 +67,10 @@ func NewConsumer(id string, redisAddr string) *Consumer {
 	}
 
 	return &Consumer{
-		ID:  id,
-		RDB: rdb,
-		Ctx: ctx,
+		ID:        id,
+		QueueName: queueName,
+		RDB:       rdb,
+		Ctx:       ctx,
 	}
 }
 
@@ -76,7 +78,7 @@ func (c *Consumer) Run() {
 	fmt.Println("Consumer started")
 
 	for {
-		result, err := c.RDB.RPop(c.Ctx, queueName).Result()
+		result, err := c.RDB.RPop(c.Ctx, c.QueueName).Result()
 		if err == redis.Nil {
 			time.Sleep(500 * time.Millisecond)
 			continue
@@ -101,7 +103,7 @@ func (c *Consumer) Run() {
 
 		if rand.Intn(errorChance) == 0 {
 			fmt.Printf("error processing job %s, returning to queue\n", job.Name)
-
+			job.Failed = true
 			err := c.returnJobToQueue(job)
 			if err != nil {
 				fmt.Printf("error returning job to queue: %v\n", err)
@@ -123,13 +125,23 @@ func (c *Consumer) returnJobToQueue(job internal.Job) error {
 		return fmt.Errorf("error marshaling job: %w", err)
 	}
 
-	return c.RDB.LPush(c.Ctx, queueName, jobBytes).Err()
+	return c.RDB.LPush(c.Ctx, c.QueueName, jobBytes).Err()
 }
 
 func main() {
+	queueName := os.Getenv("QUEUE_NAME")
+	if queueName == "" {
+		queueName = "jobs"
+	}
+
 	consumerID := os.Getenv("CONSUMER_ID")
-	if consumerID == "" {
-		consumerID = "default"
+	if consumerID == "consumer-1" || consumerID == "" {
+		randomBytes := make([]byte, 2) // 2 байта = 4 hex-символа
+		_, err := rand.Read(randomBytes)
+		if err != nil {
+			panic(fmt.Sprintf("failed to generate random consumer ID: %v", err))
+		}
+		consumerID = fmt.Sprintf("consumer-%s", hex.EncodeToString(randomBytes))
 	}
 
 	redisAddr := os.Getenv("REDIS_ADDR")
@@ -137,6 +149,6 @@ func main() {
 		redisAddr = "localhost:6379"
 	}
 
-	consumer := NewConsumer(consumerID, redisAddr)
+	consumer := NewConsumer(consumerID, queueName, redisAddr)
 	consumer.Run()
 }

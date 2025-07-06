@@ -17,18 +17,19 @@ import (
 )
 
 const (
-	queueName       = "jobs"
-	metricsPort     = ":2112"
+	metricsPort     = ":9100"
 	nameByteSize    = 8
 	payloadByteSize = 16
 )
 
-var producedJobs = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "producer_jobs_total",
-		Help: "Total number of jobs produced",
-	},
-	[]string{"producer_id"},
+var (
+	producedJobs = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "producer_jobs_total",
+			Help: "Total number of jobs produced",
+		},
+		[]string{"producer_id"},
+	)
 )
 
 func init() {
@@ -41,12 +42,13 @@ func init() {
 }
 
 type Producer struct {
-	ID  string
-	RDB *redis.Client
-	Ctx context.Context
+	ID        string
+	QueueName string
+	RDB       *redis.Client
+	Ctx       context.Context
 }
 
-func NewProducer(id string, redisAddr string) *Producer {
+func NewProducer(id string, queueName string, redisAddr string) *Producer {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 		DB:   0,
@@ -59,9 +61,10 @@ func NewProducer(id string, redisAddr string) *Producer {
 	}
 
 	return &Producer{
-		ID:  id,
-		RDB: rdb,
-		Ctx: ctx,
+		ID:        id,
+		QueueName: queueName,
+		RDB:       rdb,
+		Ctx:       ctx,
 	}
 }
 
@@ -82,7 +85,7 @@ func (p *Producer) Run() {
 
 		producedJobs.WithLabelValues(p.ID).Inc()
 
-		queueLen, err := p.RDB.LLen(p.Ctx, queueName).Result()
+		queueLen, err := p.RDB.LLen(p.Ctx, p.QueueName).Result()
 		if err != nil {
 			fmt.Printf("failed to get queue length: %v\n", err)
 			continue
@@ -115,7 +118,7 @@ func (p *Producer) pushJob(job internal.Job) error {
 		return fmt.Errorf("marshal job: %w", err)
 	}
 
-	return p.RDB.LPush(p.Ctx, queueName, jobBytes).Err()
+	return p.RDB.LPush(p.Ctx, p.QueueName, jobBytes).Err()
 }
 
 func randomHex(n int) (string, error) {
@@ -128,9 +131,19 @@ func randomHex(n int) (string, error) {
 }
 
 func main() {
+	queueName := os.Getenv("QUEUE_NAME")
+	if queueName == "" {
+		queueName = "jobs"
+	}
+
 	producerID := os.Getenv("PRODUCER_ID")
-	if producerID == "" {
-		producerID = "default"
+	if producerID == "producer-1" || producerID == "" {
+		randomBytes := make([]byte, 2) // 2 байта = 4 hex-символа
+		_, err := cryptoRand.Read(randomBytes)
+		if err != nil {
+			panic(fmt.Sprintf("failed to generate random producer ID: %v", err))
+		}
+		producerID = fmt.Sprintf("producer-%s", hex.EncodeToString(randomBytes))
 	}
 
 	redisAddr := os.Getenv("REDIS_ADDR")
@@ -138,6 +151,6 @@ func main() {
 		redisAddr = "localhost:6379"
 	}
 
-	producer := NewProducer(producerID, redisAddr)
+	producer := NewProducer(producerID, queueName, redisAddr)
 	producer.Run()
 }
