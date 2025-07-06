@@ -93,7 +93,7 @@ func (p *Producer) Run() {
 
 		fmt.Printf("Pushed job: %+v | Queue length: %d\n", job, queueLen)
 
-		delay := time.Duration(mathRand.Intn(10900)+100) * time.Millisecond
+		delay := time.Duration(mathRand.Intn(2900)+100) * time.Millisecond
 		time.Sleep(delay)
 	}
 }
