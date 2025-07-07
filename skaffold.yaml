@@ -1,0 +1,35 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: homework-queues-learning
+build:
+  artifacts:
+    - image: localhost:5000/consumer
+      context: .
+      docker:
+        dockerfile: consumer/Dockerfile
+    - image: localhost:5000/producer
+      context: .
+      docker:
+        dockerfile: producer/Dockerfile
+deploy:
+  helm:
+    releases:
+      - name: consumer
+        namespace: queues-learning
+        chartPath: helm/consumer
+        valuesFiles:
+          - helm/consumer/values.yaml
+        setValues:
+          env:
+            REDIS_ADDR: redis-master.queues-learning.svc.cluster.local:6379
+        version: 0.1.0
+      - name: producer
+        namespace: queues-learning
+        chartPath: helm/producer
+        valuesFiles:
+          - helm/producer/values.yaml
+        setValues:
+          env:
+            REDIS_ADDR: redis-master.queues-learning.svc.cluster.local:6379
+        version: 0.1.0

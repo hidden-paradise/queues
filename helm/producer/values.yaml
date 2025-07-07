@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: registry.queues-learning.svc.cluster.local:5000/producer
+  repository: myregistry.localhost:5000/producer
   tag: latest
   pullPolicy: IfNotPresent
 
