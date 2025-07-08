@@ -1,9 +1,9 @@
-CLUSTER_NAME = mycluster
+CLUSTER_NAME = queues-homework-1
 REGISTRY_PORT = 5500
-NAMESPACE = queues-learning
-REGISTRY_DOCKER=localhost:$(REGISTRY_PORT)
-REGISTRY_K8S=myregistry.localhost:$(REGISTRY_PORT)
-REDIS_QUEUE="learning-queues"
+NAMESPACE = queues-homework-1
+REGISTRY_DOCKER = localhost:$(REGISTRY_PORT)
+REGISTRY_K8S = myregistry.localhost:$(REGISTRY_PORT)
+REDIS_QUEUE = queues-homework-1
 
 .PHONY: all create-cluster build-images push-images deploy-registry deploy-deps deploy-producer deploy-consumer deploy delete-cluster
 
@@ -18,16 +18,9 @@ create-cluster:
 		--k3s-arg "--kubelet-arg=resolv-conf=/etc/resolv.conf@server:0" \
 		--wait
 
-build-consumer:
-	docker build -t $(REGISTRY_DOCKER)/consumer:latest . --file consumer/Dockerfile
-	docker push $(REGISTRY_DOCKER)/consumer:latest
-
-build-producer:
-	docker build -t $(REGISTRY_DOCKER)/producer:latest . --file producer/Dockerfile
-	docker push $(REGISTRY_DOCKER)/producer:latest
-
 create-namespace:
-	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl --context k3d-$(CLUSTER_NAME) create namespace $(NAMESPACE) --dry-run=client -o yaml | \
+	kubectl --context k3d-$(CLUSTER_NAME) apply -f -
 
 deploy-deps: create-namespace
 	helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -35,7 +28,8 @@ deploy-deps: create-namespace
 	helm repo update
 
 	helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
-      --namespace queues-learning
+      --namespace $(NAMESPACE) \
+      --set prometheus.prometheusSpec.maximumStartupDurationSeconds=300
 
 	helm upgrade --install redis bitnami/redis \
 		--namespace $(NAMESPACE) \
@@ -43,13 +37,20 @@ deploy-deps: create-namespace
 		--set auth.enabled=false \
 		--set metrics.enabled=true \
 		--set metrics.serviceMonitor.enabled=true \
-		--set metrics.serviceMonitor.namespace=queues-learning \
+		--set metrics.serviceMonitor.namespace=$(NAMESPACE) \
 		--set metrics.serviceMonitor.interval=15s \
 		--set metrics.serviceMonitor.scrapeTimeout=5s \
 		--set metrics.serviceMonitor.additionalLabels.release=prometheus \
 		--set metrics.extraEnvVars[0].name=REDIS_EXPORTER_CHECK_SINGLE_KEYS \
 		--set metrics.extraEnvVars[0].value=$(REDIS_QUEUE)
 
+build-consumer:
+	docker build -t $(REGISTRY_DOCKER)/consumer:latest . --file consumer/Dockerfile
+	docker push $(REGISTRY_DOCKER)/consumer:latest
+
+build-producer:
+	docker build -t $(REGISTRY_DOCKER)/producer:latest . --file producer/Dockerfile
+	docker push $(REGISTRY_DOCKER)/producer:latest
 
 deploy-producer: build-producer
 	helm upgrade --install producer ./helm/producer \
