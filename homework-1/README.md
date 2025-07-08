@@ -47,7 +47,7 @@ make deploy
 
 Do port forwarding for grafana
 ```bash
-ubectl --context k3d-queues-homework-1 --namespace queues-homework-1 port-forward svc/prometheus-grafana 3000:80
+kubectl --context k3d-queues-homework-1 --namespace queues-homework-1 port-forward svc/prometheus-grafana 3000:80
 ```
 
 Grafana credentials
