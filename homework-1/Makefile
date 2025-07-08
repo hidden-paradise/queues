@@ -2,7 +2,7 @@ CLUSTER_NAME = queues-homework-1
 REGISTRY_PORT = 5500
 NAMESPACE = queues-homework-1
 REGISTRY_DOCKER = localhost:$(REGISTRY_PORT)
-REGISTRY_K8S = myregistry.localhost:$(REGISTRY_PORT)
+SREGISTRY_K8S = $(CLUSTER_NAME).registry.localhost:$(REGISTRY_PORT)
 REDIS_QUEUE = queues-homework-1
 
 .PHONY: all create-cluster build-images push-images deploy-registry deploy-deps deploy-producer deploy-consumer deploy delete-cluster
@@ -15,8 +15,11 @@ create-cluster:
 		--port 8080:80@loadbalancer \
 		--port 8443:443@loadbalancer \
 		--registry-create $(REGISTRY_K8S) \
-		--k3s-arg "--kubelet-arg=resolv-conf=/etc/resolv.conf@server:0" \
 		--wait
+
+delete-cluster:
+	k3d cluster delete $(CLUSTER_NAME)
+
 
 create-namespace:
 	kubectl --context k3d-$(CLUSTER_NAME) create namespace $(NAMESPACE) --dry-run=client -o yaml | \
@@ -69,6 +72,3 @@ deploy-consumer: build-consumer
 		--set env.QUEUE_NAME=$(REDIS_QUEUE)
 
 deploy: deploy-deps deploy-producer deploy-consumer
-
-delete-cluster:
-	k3d cluster delete $(CLUSTER_NAME)
