@@ -2,7 +2,7 @@ CLUSTER_NAME = queues-homework-1
 REGISTRY_PORT = 5500
 NAMESPACE = queues-homework-1
 REGISTRY_DOCKER = localhost:$(REGISTRY_PORT)
-SREGISTRY_K8S = $(CLUSTER_NAME).registry.localhost:$(REGISTRY_PORT)
+REGISTRY_K8S = $(CLUSTER_NAME).registry.localhost:$(REGISTRY_PORT)
 REDIS_QUEUE = queues-homework-1
 
 .PHONY: all create-cluster build-images push-images deploy-registry deploy-deps deploy-producer deploy-consumer deploy delete-cluster
